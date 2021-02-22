@@ -116,6 +116,7 @@ struct sss_ldap_init_state {
     LDAP *ldap;
     int sd;
     const char *uri;
+    int timeout;
 };
 
 static int sss_ldap_init_state_destructor(void *data)
@@ -169,6 +170,8 @@ struct tevent_req *sss_ldap_init_send(TALLOC_CTX *mem_ctx,
         DEBUG(SSSDBG_CRIT_FAILURE, "sssd_async_socket_init_send failed.\n");
         goto fail;
     }
+
+    state->timeout = timeout;
 
     tevent_req_set_callback(subreq, sss_ldap_init_sys_connect_done, req);
     return req;
@@ -261,7 +264,24 @@ static void sss_ldap_init_sys_connect_done(struct tevent_req *subreq)
     }
 
     if (ldap_is_ldaps_url(state->uri)) {
+        struct timeval tv;
+        int async;
+
+        ldap_get_option(state->ldap, LDAP_OPT_NETWORK_TIMEOUT, &tv);
+        DEBUG(SSSDBG_CRIT_FAILURE, "my_log: tv.tv_sec %ld, tv.tv_usec %ld\n", tv.tv_sec, tv.tv_usec);
+        DEBUG(SSSDBG_CRIT_FAILURE, "my_log: state->timeout %d\n", state->timeout);
+        tv.tv_sec = state->timeout;
+        ldap_set_option(state->ldap, LDAP_OPT_NETWORK_TIMEOUT, &tv);
+
+        ldap_get_option(state->ldap, LDAP_OPT_CONNECT_ASYNC, &async);
+        DEBUG(SSSDBG_CRIT_FAILURE, "my_log: async %d\n", async);
+        async = LDAP_OPT_ON;
+        ldap_set_option(state->ldap, LDAP_OPT_CONNECT_ASYNC, &async);
+
+        DEBUG(SSSDBG_CRIT_FAILURE, "Before ldap_install_tls() call\n");
         lret = ldap_install_tls(state->ldap);
+        DEBUG(SSSDBG_CRIT_FAILURE, "ldap_install_tls() result: %d\n", lret);
+
         if (lret != LDAP_SUCCESS) {
             if (lret == LDAP_LOCAL_ERROR) {
                 DEBUG(SSSDBG_FUNC_DATA, "TLS/SSL already in place.\n");
