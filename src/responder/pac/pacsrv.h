@@ -28,6 +28,7 @@
 #include "responder/common/responder.h"
 #include "responder/common/responder_sbus.h"
 #include "lib/idmap/sss_idmap.h"
+#include "util/nss_dl_load.h"
 
 struct pac_ctx {
     struct resp_ctx *rctx;
@@ -35,6 +36,9 @@ struct pac_ctx {
     struct dom_sid *my_dom_sid;
     struct local_mapping_ranges *range_map;
     int pac_lifetime;
+
+    /* Dynamic library load */
+    struct sss_nss_ops ops;
 };
 
 struct sss_cmd_table *get_pac_cmds(void);

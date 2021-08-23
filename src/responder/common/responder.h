@@ -38,6 +38,7 @@
 #include "sss_client/sss_cli.h"
 #include "responder/common/cache_req/cache_req_domain.h"
 #include "util/session_recording.h"
+#include "util/nss_dl_load.h"
 
 extern hash_table_t *dp_requests;
 
@@ -370,8 +371,8 @@ errno_t schedule_get_domains_task(TALLOC_CTX *mem_ctx,
                                   get_domains_callback_fn_t *callback,
                                   void *callback_pvt);
 
-errno_t csv_string_to_uid_array(TALLOC_CTX *mem_ctx, const char *csv_string,
-                                bool allow_sss_loop,
+errno_t csv_string_to_uid_array(TALLOC_CTX *mem_ctx, struct sss_nss_ops *ops,
+                                const char *csv_string, bool allow_sss_loop,
                                 size_t *_uid_count, uid_t **_uids);
 
 uid_t client_euid(struct cli_creds *creds);

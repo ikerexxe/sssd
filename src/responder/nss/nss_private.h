@@ -27,6 +27,7 @@
 #include <ldb.h>
 
 #include "util/util.h"
+#include "util/nss_dl_load.h"
 #include "db/sysdb.h"
 #include "responder/common/responder.h"
 #include "responder/common/cache_req/cache_req.h"
@@ -93,6 +94,9 @@ struct nss_ctx {
     struct sss_mc_ctx *initgr_mc_ctx;
     uid_t mc_uid;
     gid_t mc_gid;
+
+    /* Dynamic library load */
+    struct sss_nss_ops ops;
 };
 
 struct sss_cmd_table *get_nss_cmds(void);

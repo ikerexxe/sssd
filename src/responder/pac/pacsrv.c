@@ -90,7 +90,7 @@ int pac_process_init(TALLOC_CTX *mem_ctx,
         goto fail;
     }
 
-    ret = csv_string_to_uid_array(pac_ctx->rctx, uid_str, true,
+    ret = csv_string_to_uid_array(pac_ctx->rctx, &pac_ctx->ops, uid_str, true,
                                   &pac_ctx->rctx->allowed_uids_count,
                                   &pac_ctx->rctx->allowed_uids);
     talloc_free(uid_str);

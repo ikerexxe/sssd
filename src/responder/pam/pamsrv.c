@@ -69,7 +69,7 @@ static errno_t get_trusted_uids(struct pam_ctx *pctx)
          DEBUG(SSSDBG_TRACE_FUNC, "All UIDs are allowed.\n");
          pctx->trusted_uids_count = 0;
     } else {
-        ret = csv_string_to_uid_array(pctx->rctx, uid_str, true,
+        ret = csv_string_to_uid_array(pctx->rctx, &pctx->ops, uid_str, true,
                                       &pctx->trusted_uids_count,
                                       &pctx->trusted_uids);
     }

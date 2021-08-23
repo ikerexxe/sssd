@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "tests/common.h"
+#include "tests/common_check.h"
 #include "responder/common/responder.h"
 
 struct cli_protocol_version *register_cli_protocol_version(void)
@@ -66,10 +67,15 @@ START_TEST(resp_str_to_array_test)
     uid_t *uids = NULL;
     size_t c;
     size_t d;
+    struct sss_nss_ops *ops;
+
+    ops = talloc_zero(global_talloc_context, struct sss_nss_ops);
+    sss_ck_fail_if_msg(ops == NULL, "Failed to allocate memory");
 
     for (c = 0; s2a_data[c].exp_ret != -1; c++) {
-        ret = csv_string_to_uid_array(global_talloc_context, s2a_data[c].inp,
-                                      true, &uid_count, &uids);
+        ret = csv_string_to_uid_array(global_talloc_context, ops,
+                                      s2a_data[c].inp, true,
+                                      &uid_count, &uids);
         ck_assert_msg(ret == s2a_data[c].exp_ret,
                     "csv_string_to_uid_array failed [%d][%s].", ret,
                                                                 strerror(ret));

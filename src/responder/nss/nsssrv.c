@@ -44,6 +44,7 @@
 #include "responder/common/responder_packet.h"
 #include "responder/common/responder.h"
 #include "providers/data_provider.h"
+#include "util/nss_dl_load.h"
 #include "util/util_sss_idmap.h"
 #include "sss_iface/sss_iface_async.h"
 
@@ -401,7 +402,8 @@ static int sssd_supplementary_group(struct nss_ctx *nss_ctx)
      * the SSSD is compiled --with-sssd-user=sssd but the default of the
      * user option is root (this is what RHEL does)
      */
-    ret = sss_user_by_name_or_uid(SSSD_USER,
+    ret = sss_user_by_name_or_uid(&nss_ctx->ops,
+                                  SSSD_USER,
                                   &nss_ctx->mc_uid,
                                   &nss_ctx->mc_gid);
     if (ret != EOK) {

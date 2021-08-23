@@ -884,6 +884,7 @@ dist_noinst_HEADERS = \
     src/tests/cmocka/test_expire_common.h \
     src/tests/cmocka/test_sdap_access.h \
     src/tests/cmocka/data_provider/mock_dp.h \
+    src/tests/cwrap/common_mock_nss_dl_load.h \
     src/sss_client/pam_message.h \
     src/sss_client/ssh/sss_ssh_client.h \
     src/sss_client/sudo/sss_sudo.h \
@@ -1237,6 +1238,7 @@ libsss_util_la_SOURCES = \
     src/util/server.c \
     src/util/signal.c \
     src/util/usertools.c \
+    src/util/usertools_extra.c \
     src/util/backup_file.c \
     src/util/strtonum.c \
     src/util/check_and_open.c \
@@ -1265,6 +1267,7 @@ libsss_util_la_SOURCES = \
     src/util/selinux.c \
     src/util/sss_regexp.c \
     src/util/sss_chain_id.c \
+    src/util/nss_dl_load.c \
     $(NULL)
 libsss_util_la_CFLAGS = \
     $(AM_CFLAGS) \

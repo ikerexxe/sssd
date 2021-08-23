@@ -41,6 +41,7 @@
 #include "shared/io.h"
 #include "shared/safealign.h"
 #include "util/atomic_io.h"
+#include "util/nss_dl_load.h"
 #include "util/util_errors.h"
 #include "util/sss_format.h"
 #include "util/sss_regexp.h"
@@ -324,6 +325,8 @@ int sss_output_fqname(TALLOC_CTX *mem_ctx,
 const char *sss_get_name_from_msg(struct sss_domain_info *domain,
                                   struct ldb_message *msg);
 
+errno_t sss_load_nss_pw_symbols(struct sss_nss_ops *ops);
+
 /* from backup-file.c */
 int backup_file(const char *src, int dbglvl);
 
@@ -382,7 +385,8 @@ errno_t sss_canonicalize_ip_address(TALLOC_CTX *mem_ctx,
 
 const char * const * get_known_services(void);
 
-errno_t sss_user_by_name_or_uid(const char *input, uid_t *_uid, gid_t *_gid);
+errno_t sss_user_by_name_or_uid(struct sss_nss_ops *ops, const char *input,
+                                uid_t *_uid, gid_t *_gid);
 void sss_sssd_user_uid_and_gid(uid_t *_uid, gid_t *_gid);
 void sss_set_sssd_user_eid(void);
 void sss_restore_sssd_user_eid(void);

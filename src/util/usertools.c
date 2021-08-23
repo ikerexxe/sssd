@@ -33,6 +33,7 @@
 #include "responder/common/responder.h"
 
 #define NAME_DOMAIN_PATTERN_OPTIONS (SSS_REGEXP_DUPNAMES | SSS_REGEXP_EXTENDED)
+#define NSS_BUFFER_SIZE 16384
 
 /* Function returns given realm name as new uppercase string */
 char *get_uppercase_realm(TALLOC_CTX *memctx, const char *name)
@@ -570,12 +571,32 @@ sss_fqname(char *str, size_t size, struct sss_names_ctx *nctx,
                               name, domain->name, calc_flat_name (domain), NULL);
 }
 
-errno_t sss_user_by_name_or_uid(const char *input, uid_t *_uid, gid_t *_gid)
+errno_t sss_user_by_name_or_uid(struct sss_nss_ops *ops, const char *input,
+                                uid_t *_uid, gid_t *_gid)
 {
     uid_t uid;
     errno_t ret;
     char *endptr;
-    struct passwd *pwd;
+    struct passwd pwd = { 0 };
+    TALLOC_CTX *tmp_ctx;
+    int errnop = 0;
+    enum nss_status status;
+    char s_nss_buffer[NSS_BUFFER_SIZE];
+
+    tmp_ctx = talloc_new(NULL);
+    if (!tmp_ctx) {
+        DEBUG(SSSDBG_OP_FAILURE, "talloc_new failed");
+        return ENOMEM;
+    }
+
+    if (!ops->dl_handle) {
+        ret = sss_load_nss_pw_symbols(ops);
+        if (ret != EOK) {
+            DEBUG(SSSDBG_FATAL_FAILURE, "Unable to load NSS symbols [%d]: %s\n",
+                  ret, sss_strerror(ret));
+            return ret;
+        }
+    }
 
     /* Try if it's an ID first */
     uid = strtouint32(input, &endptr, 10);
@@ -584,29 +605,33 @@ errno_t sss_user_by_name_or_uid(const char *input, uid_t *_uid, gid_t *_gid)
         if (ret == ERANGE) {
             DEBUG(SSSDBG_OP_FAILURE,
                   "UID [%s] is out of range.\n", input);
+            talloc_free(tmp_ctx);
             return ret;
         }
 
-        /* Nope, maybe a username? */
-        pwd = getpwnam(input);
+        status = ops->getpwnam_r(input, &pwd, s_nss_buffer, NSS_BUFFER_SIZE, &errnop);
     } else {
-        pwd = getpwuid(uid);
+        status = ops->getpwuid_r(uid, &pwd, s_nss_buffer, NSS_BUFFER_SIZE, &errnop);
     }
 
-    if (pwd == NULL) {
+    if (status != NSS_STATUS_SUCCESS) {
         DEBUG(SSSDBG_OP_FAILURE,
               "[%s] is neither a valid UID nor a user name which could be "
               "resolved by getpwnam().\n", input);
+        talloc_free(tmp_ctx);
         return EINVAL;
     }
 
     if (_uid) {
-        *_uid = pwd->pw_uid;
+        *_uid = pwd.pw_uid;
     }
 
     if (_gid) {
-        *_gid = pwd->pw_gid;
+        *_gid = pwd.pw_gid;
     }
+
+    talloc_free(tmp_ctx);
+
     return EOK;
 }
 
@@ -838,11 +863,25 @@ done:
 
 void sss_sssd_user_uid_and_gid(uid_t *_uid, gid_t *_gid)
 {
+    TALLOC_CTX *tmp_ctx;
+    struct sss_nss_ops *ops;
     uid_t sssd_uid;
     gid_t sssd_gid;
     errno_t ret;
 
-    ret = sss_user_by_name_or_uid(SSSD_USER, &sssd_uid, &sssd_gid);
+    tmp_ctx = talloc_new(NULL);
+    if (tmp_ctx == NULL) {
+        DEBUG(SSSDBG_OP_FAILURE, "talloc_new failed");
+        goto done;
+    }
+
+    ops = talloc_zero(tmp_ctx, struct sss_nss_ops);
+    if (ops == NULL) {
+        DEBUG(SSSDBG_OP_FAILURE, "talloc_zero failed");
+        goto done;
+    }
+
+    ret = sss_user_by_name_or_uid(ops, SSSD_USER, &sssd_uid, &sssd_gid);
     if (ret != EOK) {
         DEBUG(SSSDBG_CRIT_FAILURE, "failed to get sssd user (" SSSD_USER ") uid/gid, using root\n");
         sssd_uid = 0;
@@ -856,6 +895,9 @@ void sss_sssd_user_uid_and_gid(uid_t *_uid, gid_t *_gid)
     if (_gid != NULL) {
         *_gid = sssd_gid;
     }
+
+done:
+    talloc_zfree(tmp_ctx);
 }
 
 void sss_set_sssd_user_eid(void)

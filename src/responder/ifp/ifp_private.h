@@ -30,6 +30,7 @@
 #include <ldb.h>
 
 #include "util/util.h"
+#include "util/nss_dl_load.h"
 #include "confdb/confdb.h"
 #include "responder/common/responder.h"
 #include "responder/common/negcache.h"
@@ -42,6 +43,9 @@ struct ifp_ctx {
     struct sbus_connection *sysbus;
     const char **user_whitelist;
     uint32_t wildcard_limit;
+
+    /* Dynamic library load */
+    struct sss_nss_ops ops;
 };
 
 errno_t

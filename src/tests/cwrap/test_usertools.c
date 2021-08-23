@@ -27,44 +27,77 @@
 #include <popt.h>
 #include "util/util.h"
 #include "tests/cmocka/common_mock.h"
+#include "tests/cwrap/common_mock_nss_dl_load.h"
+
+errno_t sss_load_nss_pw_symbols(struct sss_nss_ops *ops)
+{
+    return mock_sss_load_nss_pw_symbols(ops);
+}
 
 void test_get_user_num(void **state)
 {
+    TALLOC_CTX *tmp_ctx;
+    struct sss_nss_ops *ops;
     uid_t uid;
     gid_t gid;
     errno_t ret;
 
-    ret = sss_user_by_name_or_uid("123", &uid, &gid);
+    tmp_ctx = talloc_new(NULL);
+    assert_non_null(tmp_ctx);
+    ops = talloc_zero(tmp_ctx, struct sss_nss_ops);
+    assert_non_null(ops);
+
+    ret = sss_user_by_name_or_uid(ops, "123", &uid, &gid);
     assert_int_equal(ret, EOK);
     assert_int_equal(uid, 123);
     assert_int_equal(gid, 456);
+
+    talloc_zfree(tmp_ctx);
 }
 
 void test_get_user_str(void **state)
 {
+    TALLOC_CTX *tmp_ctx;
+    struct sss_nss_ops *ops;
     uid_t uid;
     gid_t gid;
     errno_t ret;
 
-    ret = sss_user_by_name_or_uid("sssd", &uid, &gid);
+    tmp_ctx = talloc_new(NULL);
+    assert_non_null(tmp_ctx);
+    ops = talloc_zero(tmp_ctx, struct sss_nss_ops);
+    assert_non_null(ops);
+
+    ret = sss_user_by_name_or_uid(ops, "sssd", &uid, &gid);
     assert_int_equal(ret, EOK);
     assert_int_equal(uid, 123);
     assert_int_equal(gid, 456);
+
+    talloc_zfree(tmp_ctx);
 }
 
 void test_get_user_nullparm(void **state)
 {
+    TALLOC_CTX *tmp_ctx;
+    struct sss_nss_ops *ops;
     uid_t uid;
     gid_t gid;
     errno_t ret;
 
-    ret = sss_user_by_name_or_uid("sssd", &uid, NULL);
+    tmp_ctx = talloc_new(NULL);
+    assert_non_null(tmp_ctx);
+    ops = talloc_zero(tmp_ctx, struct sss_nss_ops);
+    assert_non_null(ops);
+
+    ret = sss_user_by_name_or_uid(ops, "sssd", &uid, NULL);
     assert_int_equal(ret, EOK);
     assert_int_equal(uid, 123);
 
-    ret = sss_user_by_name_or_uid("sssd", NULL, &gid);
+    ret = sss_user_by_name_or_uid(ops, "sssd", NULL, &gid);
     assert_int_equal(ret, EOK);
     assert_int_equal(gid, 456);
+
+    talloc_zfree(tmp_ctx);
 }
 
 int main(int argc, const char *argv[])

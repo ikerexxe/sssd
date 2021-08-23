@@ -1195,7 +1195,8 @@ int ipa_ad_subdom_init(struct be_ctx *be_ctx,
         /* We need to handle keytabs created by IPA oddjob script gracefully
          * even if we're running as root and IPA creates them as the SSSD user
          */
-        ret = sss_user_by_name_or_uid(SSSD_USER,
+        ret = sss_user_by_name_or_uid(&id_ctx->ops,
+                                      SSSD_USER,
                                       &id_ctx->server_mode->kt_owner_uid,
                                       &id_ctx->server_mode->kt_owner_gid);
         if (ret != EOK) {

@@ -24,6 +24,7 @@
 
 #include <security/pam_appl.h>
 #include "util/util.h"
+#include "util/nss_dl_load.h"
 #include "responder/common/responder.h"
 #include "responder/common/cache_req/cache_req.h"
 #include "lib/certmap/sss_certmap.h"
@@ -71,6 +72,9 @@ struct pam_ctx {
     /* List of authentication indicators associated with a PAM service */
     char **gssapi_indicators_map;
     bool gssapi_check_upn;
+
+    /* Dynamic library load */
+    struct sss_nss_ops ops;
 };
 
 struct pam_auth_req {

@@ -29,6 +29,13 @@
 #include "util/util.h"
 #include "responder/common/responder.h"
 #include "tests/cmocka/common_mock.h"
+#include "tests/cwrap/common_mock_nss_dl_load.h"
+
+
+errno_t sss_load_nss_pw_symbols(struct sss_nss_ops *ops)
+{
+    return mock_sss_load_nss_pw_symbols(ops);
+}
 
 /* Just to satisfy dependencies */
 struct cli_protocol_version *register_cli_protocol_version(void)
@@ -43,16 +50,19 @@ struct cli_protocol_version *register_cli_protocol_version(void)
 void test_uid_csv_to_uid_list(void **state)
 {
     TALLOC_CTX *tmp_ctx;
+    struct sss_nss_ops *ops;
     errno_t ret;
     size_t count;
     uid_t *list;
 
     tmp_ctx = talloc_new(global_talloc_context);
     assert_non_null(tmp_ctx);
+    ops = talloc_zero(tmp_ctx, struct sss_nss_ops);
+    assert_non_null(ops);
 
     check_leaks_push(tmp_ctx);
 
-    ret = csv_string_to_uid_array(tmp_ctx, "1, 2, 3", false, &count, &list);
+    ret = csv_string_to_uid_array(tmp_ctx, ops, "1, 2, 3", false, &count, &list);
     assert_int_equal(ret, EOK);
     assert_int_equal(count, 3);
     assert_int_equal(list[0], 1);
@@ -67,16 +77,19 @@ void test_uid_csv_to_uid_list(void **state)
 void test_name_csv_to_uid_list(void **state)
 {
     TALLOC_CTX *tmp_ctx;
+    struct sss_nss_ops *ops;
     errno_t ret;
     size_t count;
     uid_t *list;
 
     tmp_ctx = talloc_new(global_talloc_context);
     assert_non_null(tmp_ctx);
+    ops = talloc_zero(tmp_ctx, struct sss_nss_ops);
+    assert_non_null(ops);
 
     check_leaks_push(tmp_ctx);
 
-    ret = csv_string_to_uid_array(tmp_ctx, "sssd, foobar", true, &count, &list);
+    ret = csv_string_to_uid_array(tmp_ctx, ops, "sssd, foobar", true, &count, &list);
     assert_int_equal(ret, EOK);
     assert_int_equal(count, 2);
     assert_int_equal(list[0], 123);
@@ -90,16 +103,19 @@ void test_name_csv_to_uid_list(void **state)
 void test_csv_to_uid_list_neg(void **state)
 {
     TALLOC_CTX *tmp_ctx;
+    struct sss_nss_ops *ops;
     errno_t ret;
     size_t count;
     uid_t *list = NULL;
 
     tmp_ctx = talloc_new(global_talloc_context);
     assert_non_null(tmp_ctx);
+    ops = talloc_zero(tmp_ctx, struct sss_nss_ops);
+    assert_non_null(ops);
 
     check_leaks_push(tmp_ctx);
 
-    ret = csv_string_to_uid_array(tmp_ctx, "nosuchuser", true, &count, &list);
+    ret = csv_string_to_uid_array(tmp_ctx, ops, "nosuchuser", true, &count, &list);
     assert_int_not_equal(ret, EOK);
 
     assert_true(check_leaks_pop(tmp_ctx));

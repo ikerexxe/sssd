@@ -189,8 +189,8 @@ errno_t check_allowed_uids(uid_t uid, size_t allowed_uids_count,
     return EACCES;
 }
 
-errno_t csv_string_to_uid_array(TALLOC_CTX *mem_ctx, const char *csv_string,
-                                bool allow_sss_loop,
+errno_t csv_string_to_uid_array(TALLOC_CTX *mem_ctx, struct sss_nss_ops *ops,
+                                const char *csv_string, bool allow_sss_loop,
                                 size_t *_uid_count, uid_t **_uids)
 {
     int ret;
@@ -239,7 +239,7 @@ errno_t csv_string_to_uid_array(TALLOC_CTX *mem_ctx, const char *csv_string,
                 goto done;
             }
 
-            ret = sss_user_by_name_or_uid(list[c], &uids[c], NULL);
+            ret = sss_user_by_name_or_uid(ops, list[c], &uids[c], NULL);
             if (ret != EOK) {
                 DEBUG(SSSDBG_OP_FAILURE, "List item [%s] is neither a valid "
                                          "UID nor a user name which could be "

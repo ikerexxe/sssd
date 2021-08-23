@@ -208,6 +208,9 @@ struct ipa_id_ctx {
     char *view_name;
     /* Only used with server mode */
     struct ipa_server_mode_ctx *server_mode;
+
+    /* Dynamic library load */
+    struct sss_nss_ops ops;
 };
 
 struct ipa_options {

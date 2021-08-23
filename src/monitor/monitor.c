@@ -173,6 +173,9 @@ struct mt_ctx {
     /* For running unprivileged services */
     uid_t uid;
     gid_t gid;
+
+    /* Dynamic library load */
+    struct sss_nss_ops ops;
 };
 
 static int start_service(struct mt_svc *mt_svc);
@@ -882,7 +885,8 @@ static int get_service_user(struct mt_ctx *ctx)
         return ret;
     }
 
-    ret = sss_user_by_name_or_uid(user_str, &ctx->uid, &ctx->gid);
+
+    ret = sss_user_by_name_or_uid(&ctx->ops, user_str, &ctx->uid, &ctx->gid);
     talloc_free(user_str);
     if (ret != EOK) {
         DEBUG(SSSDBG_FATAL_FAILURE, "Failed to set allowed UIDs.\n");
