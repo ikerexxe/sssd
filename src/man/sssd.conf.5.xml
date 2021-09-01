@@ -424,6 +424,11 @@
                                 </phrase>
                             </para>
                             <para>
+                                Both a user name and a uid can be used but the
+                                user should be present in
+                                <filename>/etc/passwd</filename>.
+                            </para>
+                            <para>
                                 Default: not set, process will run as root
                             </para>
                         </listitem>
