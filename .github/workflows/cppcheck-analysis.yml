@@ -1,7 +1,6 @@
 name: "cppcheck code analysis"
 on:
   pull_request_target:
-    branches: [master]
 
 jobs:
   cppcheck:
@@ -16,9 +15,10 @@ jobs:
         persist-credentials: false
 
     - name: Perform cppcheck analysis
-      uses: linuxdeepin/action-cppcheck@v0.0.10
+      uses: ikerexxe/action-cppcheck@configure_options
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         repository: ${{ github.repository }}
         pull_request_id: ${{ github.event.pull_request.number }}
         allow_approve: false
+        enable_checks: "warning,unusedFunction,missingInclude"
