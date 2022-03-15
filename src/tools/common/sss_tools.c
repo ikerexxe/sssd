@@ -30,6 +30,13 @@
 #include "db/sysdb.h"
 #include "tools/common/sss_tools.h"
 
+static void just_a_function()
+{
+    int variable_a;
+
+    return;
+}
+
 static void sss_tool_print_common_opts(int min_len)
 {
     ERROR("Help options:\n");
