@@ -3023,6 +3023,8 @@ ad_gpo_tests_LDADD = \
     libsss_sbus.la \
     $(NULL)
 
+dist_noinst_DATA += src/tests/cmocka/GPT.INI
+
 ad_common_tests_SOURCES = \
     $(libsss_krb5_common_la_SOURCES) \
     src/tests/cmocka/common_mock_krb5.c \
