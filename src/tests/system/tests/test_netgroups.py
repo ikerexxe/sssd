@@ -106,3 +106,51 @@ def test_netgroups__add_remove_netgroup_member(client: Client, provider: Generic
     assert len(result.members) == 1
     assert "(-, user-1)" not in result.members
     assert "(-, user-2)" in result.members
+
+#TODO: change file
+@pytest.mark.tier(1)
+@pytest.mark.ticket(bz=1921315)
+@pytest.mark.topology(KnownTopologyGroup.AnyProvider)
+def test_netgroups__auto_private_groups_override(client: Client, provider: GenericProvider):
+    """
+    :title: Unexpected interaction between overriding the primary group and the
+            'auto_private_groups = true' option
+    :setup:
+        1. Create user "tuser"
+        2. Create group "tgroup1" and make "tuser" member of this group
+        3. Create group "tgroup2"
+        4. Set "auto_private_groups" to true
+        5. Start SSSD
+        6. Override "tuser" group to "tgroup2"
+        7. Restart SSSD
+    :steps:
+        1. Run "getent group tgroup2"
+        2. Run "getent group tgroup1"
+    :expectedresults:
+        1. "tuser" is a member of "tgroup2"
+        2. "tgroup1" member list is empty
+    :customerscenario: True
+    """
+    u = provider.user("tuser").add(uid = 10001, gid = 10001)
+    provider.group("tgroup1").add(gid = 20001).add_member(u)
+    provider.group("tgroup2").add(gid = 20002)
+
+    client.sssd.domain["auto_private_groups"] = "true"
+    client.sssd.start()
+    client.host.ssh.run("sss_override user-add tuser -g 20002", raise_on_error=False)
+    client.sssd.restart()
+
+    result = client.tools.getent.group("tgroup2")
+    assert result is not None
+    assert result.name == "tgroup2"
+    assert result.gid == 20002
+    assert len(result.members) == 1
+    assert result.members == ["tuser"]
+
+    print(result)
+    result = client.tools.getent.group("tgroup1")
+    print(result)
+    assert result is not None
+    assert result.name == "tgroup1"
+    assert result.gid == 20001
+    assert len(result.members) == 0
