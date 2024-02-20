@@ -74,6 +74,9 @@ endif
 if HAVE_LIBNL
 LIBNL_CONDS = ;have_libnl
 endif
+if HAVE_GDM_CUSTOM_JSON_PAM_EXTENSION
+JSON_PAM_CONDS = ;build_json_pam
+endif
 
 
 CONDS = with_false$(SUDO_CONDS)$(AUTOFS_CONDS)$(SSH_CONDS)$(SSH_KNOWN_HOSTS_PROXY_CONDS)
