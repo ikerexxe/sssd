@@ -2997,11 +2997,14 @@ static int pam_sss(enum sss_cli_command task, pam_handle_t *pamh,
     int retries = 0;
     const char *domains = NULL;
 
+    pam_syslog(pamh, LOG_ERR, "ikertxo: start"); //TODO: delete
+
     bindtextdomain(PACKAGE, LOCALEDIR);
 
     D(("Hello pam_sssd: %#x", task));
 
     eval_argv(pamh, argc, argv, &flags, &retries, &quiet_mode, &domains);
+    pam_syslog(pamh, LOG_ERR, "ikertxo: after eval_argv()"); //TODO: delete
 
     /* Fail all authentication on misconfigured domains= parameter. The admin
      * probably wanted to restrict authentication, so it's safer to fail */
@@ -3027,9 +3030,11 @@ static int pam_sss(enum sss_cli_command task, pam_handle_t *pamh,
         }
         return ret;
     }
+    pam_syslog(pamh, LOG_ERR, "ikertxo: after if1 %s", pi.pam_user); //TODO: delete
 
     do {
         retry = false;
+        pam_syslog(pamh, LOG_ERR, "ikertxo: after do1 task", task); //TODO: delete
 
         switch(task) {
             case SSS_PAM_AUTHENTICATE:
@@ -3039,6 +3044,7 @@ static int pam_sss(enum sss_cli_command task, pam_handle_t *pamh,
                  * - no password is on the stack or PAM_CLI_FLAGS_PROMPT_ALWAYS is set
                  * - preauth indicator file exists.
                  */
+                pam_syslog(pamh, LOG_ERR, "ikertxo: after switch1"); //TODO: delete
                 if ( !(flags & PAM_CLI_FLAGS_USE_FIRST_PASS)
                         && (pi.pam_authtok == NULL
                                 || (flags & PAM_CLI_FLAGS_PROMPT_ALWAYS))
@@ -3052,8 +3058,10 @@ static int pam_sss(enum sss_cli_command task, pam_handle_t *pamh,
                         pi.flags |= PAM_CLI_FLAGS_TRY_CERT_AUTH;
                     }
 
+                    pam_syslog(pamh, LOG_ERR, "ikertxo: before send_and_receive()"); //TODO: delete
                     pam_status = send_and_receive(pamh, &pi, SSS_PAM_PREAUTH,
                                                   quiet_mode);
+                    pam_syslog(pamh, LOG_ERR, "ikertxo: after send_and_receive()"); //TODO: delete
 
                     pi.flags = flags;
                     if (pam_status != PAM_SUCCESS) {
@@ -3066,6 +3074,7 @@ static int pam_sss(enum sss_cli_command task, pam_handle_t *pamh,
                          * errors can be ignored here.
                          */
                     }
+                    pam_syslog(pamh, LOG_ERR, "ikertxo: after if2"); //TODO: delete
 
                     if (pi.json_auth_msg != NULL
                             && strcmp(pi.json_auth_msg, "") != 0) {
@@ -3079,6 +3088,7 @@ static int pam_sss(enum sss_cli_command task, pam_handle_t *pamh,
                             return ret;
                         }
                     }
+                    pam_syslog(pamh, LOG_ERR, "ikertxo: after if3"); //TODO: delete
                 }
 
                 if (flags & PAM_CLI_FLAGS_TRY_CERT_AUTH
