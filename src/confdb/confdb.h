@@ -334,6 +334,9 @@
 #define CONFDB_PC_TYPE_EIDP "eidp"
 #define CONFDB_PC_EIDP_INIT_PROMPT "init_prompt"
 #define CONFDB_PC_EIDP_LINK_PROMPT "link_prompt"
+#define CONFDB_PC_TYPE_SMARTCARD "smartcard"
+#define CONFDB_PC_SMARTCARD_INIT_PROMPT "init_prompt"
+#define CONFDB_PC_SMARTCARD_PIN_PROMPT "pin_prompt"
 
 struct confdb_ctx;
 
