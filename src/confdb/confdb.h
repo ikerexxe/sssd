@@ -329,6 +329,7 @@
 #define CONFDB_PC_TYPE_PASSKEY "passkey"
 #define CONFDB_PC_PASSKEY_INTERACTIVE "interactive"
 #define CONFDB_PC_PASSKEY_INTERACTIVE_PROMPT "interactive_prompt"
+#define CONFDB_PC_PASSKEY_PIN_PROMPT "pin_prompt"
 #define CONFDB_PC_PASSKEY_TOUCH "touch"
 #define CONFDB_PC_PASSKEY_TOUCH_PROMPT "touch_prompt"
 #define CONFDB_PC_TYPE_EIDP "eidp"

@@ -4632,6 +4632,13 @@ ldap_user_extra_attrs = phone:telephoneNumber
                         </listitem>
                     </varlistentry>
                     <varlistentry>
+                        <term>pin_prompt</term>
+                        <listitem>
+                            <para>to change the message of the PIN prompt.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
                         <term>touch</term>
                         <listitem>
                             <para>boolean value, if True prompt a message to

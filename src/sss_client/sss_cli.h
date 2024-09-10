@@ -681,6 +681,7 @@ const char *pc_get_2fa_1st_prompt(struct prompt_config *pc);
 const char *pc_get_2fa_2nd_prompt(struct prompt_config *pc);
 const char *pc_get_2fa_single_prompt(struct prompt_config *pc);
 const char *pc_get_passkey_inter_prompt(struct prompt_config *pc);
+const char *pc_get_passkey_pin_prompt(struct prompt_config *pc);
 const char *pc_get_passkey_touch_prompt(struct prompt_config *pc);
 const char *pc_get_eidp_init_prompt(struct prompt_config *pc);
 const char *pc_get_eidp_link_prompt(struct prompt_config *pc);
@@ -688,6 +689,7 @@ const char *pc_get_smartcard_init_prompt(struct prompt_config *pc);
 const char *pc_get_smartcard_pin_prompt(struct prompt_config *pc);
 errno_t pc_list_add_passkey(struct prompt_config ***pc_list,
                             const char *inter_prompt,
+                            const char *pin_prompt,
                             const char *touch_prompt);
 void pc_list_free(struct prompt_config **pc_list);
 errno_t pc_list_add_password(struct prompt_config ***pc_list,
