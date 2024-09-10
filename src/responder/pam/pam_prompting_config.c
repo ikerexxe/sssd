@@ -26,6 +26,7 @@
 #include "responder/pam/pamsrv.h"
 
 #define DEFAULT_PASSKEY_PROMPT_INTERACTIVE _("Insert your Passkey device, then press ENTER.")
+#define DEFAULT_PASSKEY_PROMPT_PIN _("Security key PIN")
 #define DEFAULT_PASSKEY_PROMPT_TOUCH _("Please touch the device.")
 #define DEFAULT_EIDP_PROMPT_INIT _("Log In.")
 #define DEFAULT_EIDP_PROMPT_LINK _("Log in online with another device.")
@@ -111,6 +112,7 @@ static errno_t pam_set_passkey_prompting_options(TALLOC_CTX *tmp_ctx,
 {
     bool passkey_interactive = false;
     char *passkey_interactive_prompt = NULL;
+    char *passkey_pin_prompt = NULL;
     bool passkey_touch = false;
     char *passkey_touch_prompt = NULL;
     int ret;
@@ -130,6 +132,12 @@ static errno_t pam_set_passkey_prompting_options(TALLOC_CTX *tmp_ctx,
         }
     }
 
+    ret = confdb_get_string(cdb, tmp_ctx, section, CONFDB_PC_PASSKEY_PIN_PROMPT,
+                            DEFAULT_PASSKEY_PROMPT_PIN, &passkey_pin_prompt);
+    if (ret != EOK) {
+        DEBUG(SSSDBG_OP_FAILURE, "confdb_get_string failed, using defaults");
+    }
+
     ret = confdb_get_bool(cdb, section, CONFDB_PC_PASSKEY_TOUCH, false,
                           &passkey_touch);
     if (ret != EOK) {
@@ -144,7 +152,8 @@ static errno_t pam_set_passkey_prompting_options(TALLOC_CTX *tmp_ctx,
         }
     }
 
-    ret = pc_list_add_passkey(pc_list, passkey_interactive_prompt, passkey_touch_prompt);
+    ret = pc_list_add_passkey(pc_list, passkey_interactive_prompt,
+                              passkey_pin_prompt, passkey_touch_prompt);
     if (ret != EOK) {
         DEBUG(SSSDBG_OP_FAILURE, "pc_list_add_passkey_touch failed.\n");
     }
