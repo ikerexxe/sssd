@@ -34,6 +34,7 @@ struct auth_data {
     struct password_data *pswd;
     struct oauth2_data *oauth2;
     struct sc_data *sc;
+    struct passkey_data *passkey;
 };
 
 struct password_data {
@@ -54,6 +55,15 @@ struct sc_data {
     char **names;
     char *init_prompt;
     char *pin_prompt;
+};
+
+struct passkey_data {
+    bool enabled;
+    char *init_prompt;
+    bool pin_request;
+    int pin_attempts;
+    char *pin_prompt;
+    char *touch_prompt;
 };
 
 
