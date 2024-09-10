@@ -30,6 +30,9 @@
 #include <string.h>
 
 #include "responder/pam/pamsrv.h"
+#ifdef BUILD_PASSKEY
+#include "responder/pam/pamsrv_passkey.h"
+#endif /* BUILD_PASSKEY */
 #include "util/debug.h"
 
 #include "pamsrv_json.h"
@@ -119,6 +122,79 @@ done:
     return ret;
 }
 
+#ifdef BUILD_PASSKEY
+static errno_t
+obtain_passkey_data(TALLOC_CTX *mem_ctx, struct pam_data *pd,
+                    struct auth_data *_auth_data)
+{
+    TALLOC_CTX *tmp_ctx = NULL;
+    struct pk_child_user_data *pk_data = NULL;
+    const char *crypto_challenge = NULL;
+    bool passkey_enabled = false;
+    bool passkey_kerberos = false;
+    bool user_verification = true;
+    uint8_t *buf = NULL;
+    int32_t len;
+    int ret;
+
+    tmp_ctx = talloc_new(NULL);
+    if (tmp_ctx == NULL) {
+        return ENOMEM;
+    }
+
+    ret = pam_get_response_data(tmp_ctx, pd, SSS_PAM_PASSKEY_KRB_INFO, &buf, &len);
+    if (ret == EOK) {
+        passkey_enabled = true;
+        passkey_kerberos = true;
+        ret = decode_pam_passkey_msg(tmp_ctx, buf, len, &pk_data);
+        if (ret != EOK) {
+            DEBUG(SSSDBG_OP_FAILURE,
+                  "Failure decoding PAM passkey msg, ret %d.\n",
+                  ret);
+            goto done;
+        }
+
+        if (strcmp(pk_data->user_verification, "false") == 0) {
+            user_verification = false;
+        }
+        crypto_challenge = pk_data->crypto_challenge;
+    } else if (ret == ENOENT) {
+        DEBUG(SSSDBG_FUNC_DATA, "SSS_PAM_PASSKEY_KRB_INFO not found.\n");
+        ret = pam_get_response_data(tmp_ctx, pd, SSS_PAM_PASSKEY_INFO, &buf, &len);
+        if (ret == EOK) {
+            passkey_enabled = true;
+            crypto_challenge = talloc_strdup(tmp_ctx, "");
+        } else if (ret == ENOENT) {
+            DEBUG(SSSDBG_FUNC_DATA, "SSS_PAM_PASSKEY_INFO not found.\n");
+        } else {
+            DEBUG(SSSDBG_OP_FAILURE,
+                  "Unable to get SSS_PAM_PASSKEY_INFO, ret %d.\n",
+                  ret);
+            goto done;
+        }
+    } else {
+        DEBUG(SSSDBG_OP_FAILURE,
+              "Unable to get SSS_PAM_PASSKEY_KRB_INFO, ret %d.\n",
+              ret);
+        goto done;
+    }
+
+    _auth_data->passkey->enabled = passkey_enabled;
+    _auth_data->passkey->kerberos = passkey_kerberos;
+    _auth_data->passkey->key_connected = true;
+    _auth_data->passkey->pin_request = user_verification;
+    _auth_data->passkey->crypto_challenge = talloc_steal(mem_ctx, crypto_challenge);
+    /* Hardcoding of the following values for the moment */
+    _auth_data->passkey->pin_attempts = 8;
+    ret = EOK;
+
+done:
+    talloc_free(tmp_ctx);
+
+    return ret;
+}
+#endif /* BUILD_PASSKEY */
+
 static errno_t
 obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
                struct prompt_config **pc_list, struct auth_data *_auth_data)
@@ -129,6 +205,9 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
     char *oauth2_link_prompt = NULL;
     char *sc_init_prompt = NULL;
     char *sc_pin_prompt = NULL;
+    char *passkey_init_prompt = NULL;
+    char *passkey_pin_prompt = NULL;
+    char *passkey_touch_prompt = NULL;
     const char *tmp = NULL;
     int prompt_type;
     size_t c;
@@ -189,6 +268,32 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
                     ret = ENOMEM;
                 }
                 break;
+            case PC_TYPE_PASSKEY:
+                tmp = pc_get_passkey_inter_prompt(pc_list[c]);
+                if (tmp == NULL) {
+                    ret = ENOENT;
+                }
+                passkey_init_prompt = talloc_strdup(tmp_ctx, tmp);
+                if (passkey_init_prompt == NULL) {
+                    ret = ENOMEM;
+                }
+                tmp = pc_get_passkey_pin_prompt(pc_list[c]);
+                if (tmp == NULL) {
+                    ret = ENOENT;
+                }
+                passkey_pin_prompt = talloc_strdup(tmp_ctx, tmp);
+                if (passkey_pin_prompt == NULL) {
+                    ret = ENOMEM;
+                }
+                tmp = pc_get_passkey_touch_prompt(pc_list[c]);
+                if (tmp == NULL) {
+                    ret = ENOENT;
+                }
+                passkey_touch_prompt = talloc_strdup(tmp_ctx, tmp);
+                if (passkey_touch_prompt == NULL) {
+                    ret = ENOMEM;
+                }
+                break;
             default:
                 ret = EPERM;
                 goto done;
@@ -238,11 +343,38 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
         }
     }
 
+    if (passkey_init_prompt == NULL) {
+        passkey_init_prompt = talloc_strdup(tmp_ctx, "Insert security key");
+        if (passkey_init_prompt == NULL) {
+            ret = ENOMEM;
+            goto done;
+        }
+    }
+
+    if (passkey_pin_prompt == NULL) {
+        passkey_pin_prompt = talloc_strdup(tmp_ctx, "Security key PIN");
+        if (passkey_pin_prompt == NULL) {
+            ret = ENOMEM;
+            goto done;
+        }
+    }
+
+    if (passkey_touch_prompt == NULL) {
+        passkey_touch_prompt = talloc_strdup(tmp_ctx, "Touch security key");
+        if (passkey_touch_prompt == NULL) {
+            ret = ENOMEM;
+            goto done;
+        }
+    }
+
     _auth_data->pswd->prompt = talloc_steal(mem_ctx, password_prompt);
     _auth_data->oauth2->init_prompt = talloc_steal(mem_ctx, oauth2_init_prompt);
     _auth_data->oauth2->link_prompt = talloc_steal(mem_ctx, oauth2_link_prompt);
     _auth_data->sc->init_prompt = talloc_steal(mem_ctx, sc_init_prompt);
     _auth_data->sc->pin_prompt = talloc_steal(mem_ctx, sc_pin_prompt);
+    _auth_data->passkey->init_prompt = talloc_steal(mem_ctx, passkey_init_prompt);
+    _auth_data->passkey->pin_prompt = talloc_steal(mem_ctx, passkey_pin_prompt);
+    _auth_data->passkey->touch_prompt = talloc_steal(mem_ctx, passkey_touch_prompt);
     ret = EOK;
 
 done:
@@ -440,6 +572,14 @@ init_auth_data(TALLOC_CTX *mem_ctx, struct confdb_ctx *cdb,
     }
     (*_auth_data)->sc->enabled = true;
 
+    (*_auth_data)->passkey = talloc_zero(mem_ctx, struct passkey_data);
+    if ((*_auth_data)->passkey == NULL) {
+        DEBUG(SSSDBG_OP_FAILURE, "talloc_zero failed.\n");
+        ret = ENOMEM;
+        goto done;
+    }
+    (*_auth_data)->passkey->enabled = true;
+
     ret = obtain_prompts(cdb, mem_ctx, pc_list, *_auth_data);
     if (ret != EOK) {
         DEBUG(SSSDBG_CRIT_FAILURE, "Failure to obtain the prompts.\n");
@@ -468,6 +608,16 @@ init_auth_data(TALLOC_CTX *mem_ctx, struct confdb_ctx *cdb,
         DEBUG(SSSDBG_CRIT_FAILURE, "Failure to obtain smartcard labels.\n");
         goto done;
     }
+
+#ifdef BUILD_PASSKEY
+    ret = obtain_passkey_data(mem_ctx, pd, *_auth_data);
+    if (ret != EOK) {
+        DEBUG(SSSDBG_CRIT_FAILURE, "Failure to obtain passkey data.\n");
+        goto done;
+    }
+#else
+    (*_auth_data)->passkey->enabled = false;
+#endif /* BUILD_PASSKEY */
 
 done:
     return ret;
@@ -599,6 +749,7 @@ json_format_mechanisms(struct auth_data *auth_data, json_t **_list_mech)
     json_t *json_cert = NULL;
     json_t *json_cert_array = NULL;
     json_t *json_sc = NULL;
+    json_t *json_passkey = NULL;
     int ret;
 
     root = json_object();
@@ -702,6 +853,33 @@ json_format_mechanisms(struct auth_data *auth_data, json_t **_list_mech)
         }
     }
 
+    if (auth_data->passkey->enabled) {
+        json_passkey = json_pack("{s:s,s:s,s:s,s:b,s:b,s:i,s:s,s:s,s:b,s:s}",
+                                 "name", "Passkey",
+                                 "role", "passkey",
+                                 "initInstruction", auth_data->passkey->init_prompt,
+                                 "keyConnected", auth_data->passkey->key_connected,
+                                 "pinRequest", auth_data->passkey->pin_request,
+                                 "pinAttempts", auth_data->passkey->pin_attempts,
+                                 "pinPrompt", auth_data->passkey->pin_prompt,
+                                 "touchInstruction", auth_data->passkey->touch_prompt,
+                                 "kerberos", auth_data->passkey->kerberos,
+                                 "cryptoChallenge", auth_data->passkey->crypto_challenge);
+        if (json_passkey == NULL) {
+            DEBUG(SSSDBG_OP_FAILURE, "json_pack failed.\n");
+            ret = ENOMEM;
+            goto done;
+        }
+
+        ret = json_object_set_new(root, "passkey", json_passkey);
+        if (ret == -1) {
+            DEBUG(SSSDBG_OP_FAILURE, "json_array_append failed.\n");
+            json_decref(json_passkey);
+            ret = ENOMEM;
+            goto done;
+        }
+    }
+
     *_list_mech = root;
     ret = EOK;
 
@@ -732,6 +910,22 @@ json_format_priority(struct auth_data *auth_data, json_t **_priority)
 
     if (auth_data->sc->enabled) {
         json_priority = json_string("smartcard");
+        if (json_priority == NULL) {
+            DEBUG(SSSDBG_OP_FAILURE, "json_string failed.\n");
+            ret = ENOMEM;
+            goto done;
+        }
+        ret = json_array_append_new(root, json_priority);
+        if (ret == -1) {
+            DEBUG(SSSDBG_OP_FAILURE, "json_array_append failed.\n");
+            json_decref(json_priority);
+            ret = ENOMEM;
+            goto done;
+        }
+    }
+
+    if (auth_data->passkey->enabled) {
+        json_priority = json_string("passkey");
         if (json_priority == NULL) {
             DEBUG(SSSDBG_OP_FAILURE, "json_string failed.\n");
             ret = ENOMEM;
