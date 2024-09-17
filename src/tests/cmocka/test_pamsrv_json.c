@@ -41,6 +41,7 @@
 #define PASSKEY_INIT_PROMPT "Insert key"
 #define PASSKEY_PIN_PROMPT  "Key PIN"
 #define PASSKEY_TOUCH_PROMPT "Touch key"
+#define PASSKEY_CRYPTO_CHAL "6uDMvRKj3W5xJV3HaQjZrtXMNmUUAjRGklFG2MIhN5s="
 
 #define SC1_CERT_USER       "cert_user1\0"
 #define SC1_TOKEN_NAME      "token_name1\0"
@@ -132,6 +133,8 @@
 #define SMARTCARD_CONTENT           "{\"pin\": \"ThePIN\", \"tokenName\": \"token_name1\", " \
                                     "\"moduleName\": \"module_name1\", \"keyId\": \"key_id1\", " \
                                     "\"label\": \"label1\"}"
+#define PASSKEY_CONTENT             "{\"pin\": \"ThePIN\", \"kerberos\": true, " \
+                                    "\"cryptoChallenge\": \"" PASSKEY_CRYPTO_CHAL "\"}"
 #define AUTH_MECH_REPLY_PASSWORD    "{\"authSelection\": {" \
                                     "\"status\": \"Ok\", \"password\": " \
                                     PASSWORD_CONTENT "}}"
@@ -140,6 +143,9 @@
 #define AUTH_MECH_REPLY_SMARTCARD   "{\"authSelection\": {" \
                                     "\"status\": \"Ok\", \"smartcard:1\": " \
                                     SMARTCARD_CONTENT "}}"
+#define AUTH_MECH_REPLY_PASSKEY     "{\"authSelection\": {" \
+                                    "\"status\": \"Ok\", \"passkey\": " \
+                                    PASSKEY_CONTENT "}}"
 #define AUTH_MECH_ERRONEOUS         "{\"authSelection\": {" \
                                     "\"status\": \"Ok\", \"lololo\": {}}}"
 
@@ -852,6 +858,26 @@ void test_json_unpack_smartcard_ok(void **state)
     talloc_free(test_ctx);
 }
 
+void test_json_unpack_passkey_ok(void **state)
+{
+    json_t *jroot = NULL;
+    const char *pin = NULL;
+    char *crypto_challenge = NULL;
+    bool kerberos = false;
+    json_error_t jret;
+    int ret;
+
+    jroot = json_loads(PASSKEY_CONTENT, 0, &jret);
+    assert_non_null(jroot);
+
+    ret = json_unpack_passkey(jroot, &pin, &kerberos, &crypto_challenge);
+    assert_int_equal(ret, EOK);
+    assert_string_equal(pin, "ThePIN");
+    assert_int_equal(kerberos, true);
+    assert_string_equal(crypto_challenge, PASSKEY_CRYPTO_CHAL);
+    json_decref(jroot);
+}
+
 void test_json_unpack_auth_reply_password(void **state)
 {
     TALLOC_CTX *test_ctx = NULL;
@@ -979,6 +1005,32 @@ void test_json_unpack_auth_reply_sc2(void **state)
     talloc_free(test_ctx);
 }
 
+void test_json_unpack_auth_reply_passkey(void **state)
+{
+    TALLOC_CTX *test_ctx = NULL;
+    struct pam_data *pd = NULL;
+    const char *pin = NULL;
+    size_t len = 0;
+    int ret;
+
+    test_ctx = talloc_new(NULL);
+    assert_non_null(test_ctx);
+    pd = talloc_zero(test_ctx, struct pam_data);
+    assert_non_null(pd);
+    pd->authtok = sss_authtok_new(pd);
+    assert_non_null(pd->authtok);
+    pd->json_auth_msg = discard_const(AUTH_SELECTION_PASSKEY);
+    pd->json_auth_selected = discard_const(AUTH_MECH_REPLY_PASSKEY);
+
+    ret = json_unpack_auth_reply(pd);
+    assert_int_equal(ret, EOK);
+    assert_int_equal(sss_authtok_get_type(pd->authtok), SSS_AUTHTOK_TYPE_PASSKEY_KRB);
+    sss_authtok_get_passkey_pin(pd->authtok, &pin, &len);
+    assert_string_equal(pin, "ThePIN");
+
+    talloc_free(test_ctx);
+}
+
 void test_json_unpack_auth_reply_failure(void **state)
 {
     TALLOC_CTX *test_ctx = NULL;
@@ -1085,10 +1137,12 @@ int main(int argc, const char *argv[])
 #endif
         cmocka_unit_test(test_json_unpack_password_ok),
         cmocka_unit_test(test_json_unpack_smartcard_ok),
+        cmocka_unit_test(test_json_unpack_passkey_ok),
         cmocka_unit_test(test_json_unpack_auth_reply_password),
         cmocka_unit_test(test_json_unpack_auth_reply_oauth2),
         cmocka_unit_test(test_json_unpack_auth_reply_sc1),
         cmocka_unit_test(test_json_unpack_auth_reply_sc2),
+        cmocka_unit_test(test_json_unpack_auth_reply_passkey),
         cmocka_unit_test(test_json_unpack_auth_reply_failure),
         cmocka_unit_test(test_json_unpack_oauth2_code),
         cmocka_unit_test(test_is_pam_json_enabled_service_in_list),
