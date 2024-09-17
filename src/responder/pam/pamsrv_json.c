@@ -208,9 +208,6 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
     char *passkey_init_prompt = NULL;
     char *passkey_pin_prompt = NULL;
     char *passkey_touch_prompt = NULL;
-    const char *tmp = NULL;
-    int prompt_type;
-    size_t c;
     errno_t ret;
 
     tmp_ctx = talloc_new(NULL);
@@ -218,153 +215,52 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
         return ENOMEM;
     }
 
-    if (pc_list != NULL) {
-        for (c = 0; pc_list[c] != NULL; c++) {
-            prompt_type = pc_get_type(pc_list[c]);
-            switch(prompt_type) {
-            case PC_TYPE_PASSWORD:
-                tmp = pc_get_password_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                password_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (password_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                break;
-            case PC_TYPE_EIDP:
-                tmp = pc_get_eidp_init_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                oauth2_init_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (oauth2_init_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                tmp = pc_get_eidp_link_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                oauth2_link_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (oauth2_link_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                break;
-            case PC_TYPE_SMARTCARD:
-                tmp = pc_get_smartcard_init_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                sc_init_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (sc_init_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                tmp = pc_get_smartcard_pin_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                sc_pin_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (sc_pin_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                break;
-            case PC_TYPE_PASSKEY:
-                tmp = pc_get_passkey_inter_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                passkey_init_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (passkey_init_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                tmp = pc_get_passkey_pin_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                passkey_pin_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (passkey_pin_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                tmp = pc_get_passkey_touch_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                passkey_touch_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (passkey_touch_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                break;
-            default:
-                ret = EPERM;
-                goto done;
-            }
-        }
-    }
-
+    password_prompt = talloc_strdup(tmp_ctx, PASSWORD_PROMPT);
     if (password_prompt == NULL) {
-        ret = confdb_get_string(cdb, tmp_ctx, CONFDB_PC_CONF_ENTRY,
-                                CONFDB_PC_PASSWORD_PROMPT, "",
-                                &password_prompt);
-        if (ret != EOK) {
-            goto done;
-        }
+        ret = ENOMEM;
+        goto done;
     }
 
+    oauth2_init_prompt = talloc_strdup(tmp_ctx, OAUTH2_INIT_PROMPT);
     if (oauth2_init_prompt == NULL) {
-        oauth2_init_prompt = talloc_strdup(tmp_ctx, "Log In");
-        if (oauth2_init_prompt == NULL) {
-            ret = ENOMEM;
-            goto done;
-        }
+        ret = ENOMEM;
+        goto done;
     }
 
-    if (oauth2_link_prompt == NULL) {
-        oauth2_link_prompt = talloc_strdup(tmp_ctx,
-                                           "Log in online with another device");
-        if (oauth2_init_prompt == NULL) {
-            ret = ENOMEM;
-            goto done;
-        }
+    oauth2_link_prompt = talloc_strdup(tmp_ctx, OAUTH2_LINK_PROMPT);
+    if (oauth2_init_prompt == NULL) {
+        ret = ENOMEM;
+        goto done;
     }
 
+    sc_init_prompt = talloc_strdup(tmp_ctx, "Insert smartcard");
     if (sc_init_prompt == NULL) {
-        sc_init_prompt = talloc_strdup(tmp_ctx, "Insert smartcard");
-        if (sc_init_prompt == NULL) {
-            ret = ENOMEM;
-            goto done;
-        }
+        ret = ENOMEM;
+        goto done;
     }
 
+    sc_pin_prompt = talloc_strdup(tmp_ctx, SC_PIN_PROMPT);
     if (sc_pin_prompt == NULL) {
-        sc_pin_prompt = talloc_strdup(tmp_ctx, "PIN");
-        if (sc_pin_prompt == NULL) {
-            ret = ENOMEM;
-            goto done;
-        }
+        ret = ENOMEM;
+        goto done;
     }
 
+    passkey_init_prompt = talloc_strdup(tmp_ctx, PASSKEY_INIT_PROMPT);
     if (passkey_init_prompt == NULL) {
-        passkey_init_prompt = talloc_strdup(tmp_ctx, "Insert security key");
-        if (passkey_init_prompt == NULL) {
-            ret = ENOMEM;
-            goto done;
-        }
+        ret = ENOMEM;
+        goto done;
     }
 
+    passkey_pin_prompt = talloc_strdup(tmp_ctx, PASSKEY_PIN_PROMPT);
     if (passkey_pin_prompt == NULL) {
-        passkey_pin_prompt = talloc_strdup(tmp_ctx, "Security key PIN");
-        if (passkey_pin_prompt == NULL) {
-            ret = ENOMEM;
-            goto done;
-        }
+        ret = ENOMEM;
+        goto done;
     }
 
+    passkey_touch_prompt = talloc_strdup(tmp_ctx, PASSKEY_TOUCH_PROMPT);
     if (passkey_touch_prompt == NULL) {
-        passkey_touch_prompt = talloc_strdup(tmp_ctx, "Touch security key");
-        if (passkey_touch_prompt == NULL) {
-            ret = ENOMEM;
-            goto done;
-        }
+        ret = ENOMEM;
+        goto done;
     }
 
     _auth_data->pswd->prompt = talloc_steal(mem_ctx, password_prompt);

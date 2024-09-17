@@ -30,6 +30,14 @@
 
 #include "util/sss_pam_data.h"
 
+#define PASSWORD_PROMPT     "Password"
+#define OAUTH2_INIT_PROMPT  "Log In"
+#define OAUTH2_LINK_PROMPT  "Log in online with another device"
+#define PASSKEY_INIT_PROMPT "Insert security key"
+#define PASSKEY_PIN_PROMPT  "Security key PIN"
+#define PASSKEY_TOUCH_PROMPT "Touch security key"
+#define SC_PIN_PROMPT       "Smartcard PIN"
+
 struct auth_data {
     struct password_data *pswd;
     struct oauth2_data *oauth2;

@@ -30,17 +30,10 @@
 #include "src/responder/pam/pamsrv.h"
 #include "src/responder/pam/pamsrv_json.h"
 
-#define PASSWORD_PROMPT     "Password"
-#define OAUTH2_INIT_PROMPT  "Init"
-#define OAUTH2_LINK_PROMPT  "Link"
 #define OAUTH2_URI          "short.url.com/tmp\0"
 #define OAUTH2_URI_COMP     "\0"
 #define OAUTH2_CODE         "1234-5678"
 #define OAUTH2_STR          OAUTH2_URI OAUTH2_URI_COMP OAUTH2_CODE
-#define SC_PIN_PROMPT       "PIN"
-#define PASSKEY_INIT_PROMPT "Insert key"
-#define PASSKEY_PIN_PROMPT  "Key PIN"
-#define PASSKEY_TOUCH_PROMPT "Touch key"
 #define PASSKEY_CRYPTO_CHAL "6uDMvRKj3W5xJV3HaQjZrtXMNmUUAjRGklFG2MIhN5s="
 
 #define SC1_CERT_USER       "cert_user1\0"
