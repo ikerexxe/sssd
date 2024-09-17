@@ -121,7 +121,7 @@
                                     "\"priority\": " PRIORITY_ALL "}}"
 
 #define PASSWORD_CONTENT            "{\"password\": \"ThePassword\"}"
-#define SMARTCARD_CONTENT           "{\"pin\": \"ThePIN\"}"
+#define PIN_CONTENT                 "{\"pin\": \"ThePIN\"}"
 #define AUTH_MECH_REPLY_PASSWORD    "{\"auth-selection\": {" \
                                     "\"status\": \"Ok\", \"password\": " \
                                     PASSWORD_CONTENT "}}"
@@ -129,7 +129,10 @@
                                     "\"status\": \"Ok\", \"eidp\": {}}}"
 #define AUTH_MECH_REPLY_SMARTCARD   "{\"auth-selection\": {" \
                                     "\"status\": \"Ok\", \"smartcard:1\": " \
-                                    SMARTCARD_CONTENT "}}"
+                                    PIN_CONTENT "}}"
+#define AUTH_MECH_REPLY_PASSKEY     "{\"auth-selection\": {" \
+                                    "\"status\": \"Ok\", \"passkey\": " \
+                                    PIN_CONTENT "}}"
 #define AUTH_MECH_ERRONEOUS         "{\"auth-selection\": {" \
                                     "\"status\": \"Ok\", \"lololo\": {}}}"
 
@@ -676,17 +679,17 @@ void test_json_unpack_password_ok(void **state)
     json_decref(jroot);
 }
 
-void test_json_unpack_sc_ok(void **state)
+void test_json_unpack_pin_ok(void **state)
 {
     json_t *jroot = NULL;
     char *pin = NULL;
     json_error_t jret;
     int ret;
 
-    jroot = json_loads(SMARTCARD_CONTENT, 0, &jret);
+    jroot = json_loads(PIN_CONTENT, 0, &jret);
     assert_non_null(jroot);
 
-    ret = json_unpack_smartcard(jroot, &pin);
+    ret = json_unpack_pin(jroot, &pin);
     assert_int_equal(ret, EOK);
     assert_string_equal(pin, "ThePIN");
     json_decref(jroot);
@@ -836,6 +839,39 @@ void test_json_unpack_auth_reply_sc2(void **state)
     talloc_free(test_ctx);
 }
 
+void test_json_unpack_auth_reply_passkey(void **state)
+{
+    TALLOC_CTX *test_ctx = NULL;
+    struct pam_data *pd = NULL;
+    enum sss_authtok_type type;
+    const char *pin = NULL;
+    char *data = NULL;
+    size_t len = 0;
+    int ret;
+
+    test_ctx = talloc_new(NULL);
+    assert_non_null(test_ctx);
+    pd = talloc_zero(test_ctx, struct pam_data);
+    assert_non_null(pd);
+    pd->authtok = sss_authtok_new(pd);
+    assert_non_null(pd->authtok);
+    type = SSS_AUTHTOK_TYPE_PASSKEY;
+    data = talloc_strdup(test_ctx, "passkey");
+    assert_non_null(data);
+    len = strlen(data) + 1;
+    ret = sss_authtok_set(pd->authtok, type, (const uint8_t *)data, len);
+    pd->json_auth_msg = discard_const(AUTH_SELECTION_PASSKEY);
+    pd->json_auth_selected = discard_const(AUTH_MECH_REPLY_PASSKEY);
+
+    ret = json_unpack_auth_reply(pd);
+    assert_int_equal(ret, EOK);
+    assert_int_equal(sss_authtok_get_type(pd->authtok), SSS_AUTHTOK_TYPE_PASSKEY);
+    sss_authtok_get_passkey_pin(pd->authtok, &pin, &len);
+    assert_string_equal(pin, "ThePIN");
+
+    talloc_free(test_ctx);
+}
+
 void test_json_unpack_auth_reply_failure(void **state)
 {
     TALLOC_CTX *test_ctx = NULL;
@@ -939,11 +975,12 @@ int main(int argc, const char *argv[])
         cmocka_unit_test_setup_teardown(test_json_format_auth_selection_failure, setup, teardown),
         cmocka_unit_test(test_generate_json_message_integration),
         cmocka_unit_test(test_json_unpack_password_ok),
-        cmocka_unit_test(test_json_unpack_sc_ok),
+        cmocka_unit_test(test_json_unpack_pin_ok),
         cmocka_unit_test(test_json_unpack_auth_reply_password),
         cmocka_unit_test(test_json_unpack_auth_reply_oauth2),
         cmocka_unit_test(test_json_unpack_auth_reply_sc1),
         cmocka_unit_test(test_json_unpack_auth_reply_sc2),
+        cmocka_unit_test(test_json_unpack_auth_reply_passkey),
         cmocka_unit_test(test_json_unpack_auth_reply_failure),
         cmocka_unit_test(test_json_unpack_oauth2_code),
         cmocka_unit_test(test_is_pam_json_enabled_service_in_list),

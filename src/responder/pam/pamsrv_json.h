@@ -180,13 +180,13 @@ json_unpack_oauth2_code(TALLOC_CTX *mem_ctx, char *json_auth_msg,
                         char **_oauth2_code);
 
 /**
- * @brief Unpack smartcard specific data reply
+ * @brief Unpack data reply containing PIN
  *
- * @param[in] jroot jansson structure containing the smartcard specific data
+ * @param[in] jroot jansson structure containing the data
  * @param[out] _pin user PIN
  */
 errno_t
-json_unpack_smartcard(json_t *jroot, char **_pin);
+json_unpack_pin(json_t *jroot, char **_pin);
 
 /**
  * @brief Unpack GDM reply and check its value

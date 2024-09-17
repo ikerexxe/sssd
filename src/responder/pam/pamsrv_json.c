@@ -1069,7 +1069,7 @@ done:
 }
 
 errno_t
-json_unpack_smartcard(json_t *jroot, char **_pin)
+json_unpack_pin(json_t *jroot, char **_pin)
 {
     char *pin = NULL;
     int ret = EOK;
@@ -1174,7 +1174,7 @@ json_unpack_auth_reply(struct pam_data *pd)
         }
 
         if (strstr(key, "smartcard") != NULL) {
-            ret = json_unpack_smartcard(jobj, &pin);
+            ret = json_unpack_pin(jobj, &pin);
             if (ret != EOK) {
                 goto done;
             }
@@ -1208,6 +1208,20 @@ json_unpack_auth_reply(struct pam_data *pd)
             if (ret != EOK) {
                 DEBUG(SSSDBG_CRIT_FAILURE,
                       "sss_authtok_set_sc failed: %d.\n", ret);
+            }
+            goto done;
+        }
+
+        if (strcmp(key, "passkey") == 0) {
+            ret = json_unpack_pin(jobj, &pin);
+            if (ret != EOK) {
+                goto done;
+            }
+
+            ret = sss_authtok_set_passkey_pin(pd->authtok, pin);
+            if (ret != EOK) {
+                DEBUG(SSSDBG_CRIT_FAILURE,
+                      "sss_authtok_set_passkey_pin failed: %d.\n", ret);
             }
             goto done;
         }
