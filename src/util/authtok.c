@@ -792,6 +792,79 @@ done:
     return ret;
 }
 
+errno_t sss_authtok_set_passkey_pin(struct sss_auth_token *tok,
+                                    const char *pin)
+{
+    TALLOC_CTX *tmp_ctx;
+    char *prompt = NULL;
+    char *key = NULL;
+    char *old_pin = NULL;
+    int ret;
+
+    if (!tok) {
+        return EINVAL;
+    }
+
+    tmp_ctx = talloc_new(NULL);
+    if (tmp_ctx == NULL) {
+        DEBUG(SSSDBG_OP_FAILURE, "talloc_new failed.\n");
+        ret = ENOMEM;
+        goto done;
+    }
+
+    switch (tok->type) {
+    case SSS_AUTHTOK_TYPE_EMPTY:
+        DEBUG(SSSDBG_MINOR_FAILURE, "Empty authtok type.\n");
+        ret = ENOENT;
+        break;
+    case SSS_AUTHTOK_TYPE_PASSKEY:
+        sss_authtok_set_empty(tok);
+        ret = sss_authtok_set_string(tok, SSS_AUTHTOK_TYPE_PASSKEY,
+                                     "passkey", pin, strlen(pin));
+        break;
+    case SSS_AUTHTOK_TYPE_PASSKEY_KRB:
+        ret = sss_auth_unpack_passkey_blob(tmp_ctx, tok->data, &prompt, &key, &old_pin);
+        if (ret != EOK) {
+            DEBUG(SSSDBG_OP_FAILURE,
+                  "sss_auth_unpack_passkey_blob returned [%d]: [%s].\n",
+                  ret, sss_strerror(ret));
+            goto done;
+        }
+
+        ret = sss_authtok_set_passkey_krb(tok, prompt, key, pin);
+        if (ret != EOK) {
+            DEBUG(SSSDBG_OP_FAILURE,
+                  "sss_authtok_set_passkey_krb returned [%d]: [%s].\n",
+                  ret, sss_strerror(ret));
+            goto done;
+        }
+        break;
+    case SSS_AUTHTOK_TYPE_PASSWORD:
+    case SSS_AUTHTOK_TYPE_2FA:
+    case SSS_AUTHTOK_TYPE_SC_PIN:
+    case SSS_AUTHTOK_TYPE_SC_KEYPAD:
+    case SSS_AUTHTOK_TYPE_CCFILE:
+    case SSS_AUTHTOK_TYPE_2FA_SINGLE:
+    case SSS_AUTHTOK_TYPE_OAUTH2:
+    case SSS_AUTHTOK_TYPE_PASSKEY_REPLY:
+        DEBUG(SSSDBG_MINOR_FAILURE, "Incorrect authtok type.\n");
+        ret = EACCES;
+        break;
+    default:
+        ret = EINVAL;
+        break;
+    }
+
+done:
+    talloc_free(tmp_ctx);
+
+    if (ret != EOK) {
+        sss_authtok_set_empty(tok);
+    }
+
+    return ret;
+}
+
 errno_t sss_authtok_get_passkey(TALLOC_CTX *mem_ctx,
                                 struct sss_auth_token *tok,
                                 const char **_prompt,

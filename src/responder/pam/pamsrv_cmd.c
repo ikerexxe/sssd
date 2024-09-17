@@ -1545,9 +1545,12 @@ void pam_reply(struct pam_auth_req *preq)
         }
 #endif /* BUILD_PASSKEY */
 
+        DEBUG(SSSDBG_OP_FAILURE, "ikertxo: before ifdef\n"); //TODO: delete
 #ifdef HAVE_GDM_CUSTOM_JSON_PAM_EXTENSION
+        DEBUG(SSSDBG_OP_FAILURE, "ikertxo: after ifdef\n"); //TODO: delete
         if (is_pam_json_enabled(pctx->json_services,
                                 pd->service)) {
+            DEBUG(SSSDBG_OP_FAILURE, "ikertxo: after if1\n"); //TODO: delete
             ret = generate_json_auth_message(pctx->rctx->cdb, pc_list, pd);
             if (ret != EOK) {
                 DEBUG(SSSDBG_CRIT_FAILURE,

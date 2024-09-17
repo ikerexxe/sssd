@@ -26,9 +26,12 @@
 #include "responder/pam/pamsrv.h"
 
 #define DEFAULT_PASSKEY_PROMPT_INTERACTIVE _("Insert your Passkey device, then press ENTER.")
+#define DEFAULT_PASSKEY_PROMPT_PIN _("Security key PIN")
 #define DEFAULT_PASSKEY_PROMPT_TOUCH _("Please touch the device.")
 #define DEFAULT_EIDP_PROMPT_INIT _("Log In.")
 #define DEFAULT_EIDP_PROMPT_LINK _("Log in online with another device.")
+#define DEFAULT_SMARTCARD_PROMPT_INIT _("Insert smartcard")
+#define DEFAULT_SMARTCARD_PROMPT_PIN _("PIN")
 
 typedef errno_t (pam_set_prompting_fn_t)(TALLOC_CTX *, struct confdb_ctx *,
                                          const char *,
@@ -109,6 +112,7 @@ static errno_t pam_set_passkey_prompting_options(TALLOC_CTX *tmp_ctx,
 {
     bool passkey_interactive = false;
     char *passkey_interactive_prompt = NULL;
+    char *passkey_pin_prompt = NULL;
     bool passkey_touch = false;
     char *passkey_touch_prompt = NULL;
     int ret;
@@ -128,6 +132,12 @@ static errno_t pam_set_passkey_prompting_options(TALLOC_CTX *tmp_ctx,
         }
     }
 
+    ret = confdb_get_string(cdb, tmp_ctx, section, CONFDB_PC_PASSKEY_PIN_PROMPT,
+                            DEFAULT_PASSKEY_PROMPT_PIN, &passkey_pin_prompt);
+    if (ret != EOK) {
+        DEBUG(SSSDBG_OP_FAILURE, "confdb_get_string failed, using defaults");
+    }
+
     ret = confdb_get_bool(cdb, section, CONFDB_PC_PASSKEY_TOUCH, false,
                           &passkey_touch);
     if (ret != EOK) {
@@ -142,7 +152,8 @@ static errno_t pam_set_passkey_prompting_options(TALLOC_CTX *tmp_ctx,
         }
     }
 
-    ret = pc_list_add_passkey(pc_list, passkey_interactive_prompt, passkey_touch_prompt);
+    ret = pc_list_add_passkey(pc_list, passkey_interactive_prompt,
+                              passkey_pin_prompt, passkey_touch_prompt);
     if (ret != EOK) {
         DEBUG(SSSDBG_OP_FAILURE, "pc_list_add_passkey_touch failed.\n");
     }
@@ -174,6 +185,36 @@ static errno_t pam_set_eidp_prompting_options(TALLOC_CTX *tmp_ctx,
     ret = pc_list_add_eidp(pc_list, init_prompt, link_prompt);
     if (ret != EOK) {
         DEBUG(SSSDBG_OP_FAILURE, "pc_list_add_eidp failed.\n");
+    }
+
+    return ret;
+}
+
+static errno_t
+pam_set_smartcard_prompting_options(TALLOC_CTX *tmp_ctx,
+                                    struct confdb_ctx *cdb,
+                                    const char *section,
+                                    struct prompt_config ***pc_list)
+{
+    char *init_prompt = NULL;
+    char *pin_prompt = NULL;
+    int ret;
+
+    ret = confdb_get_string(cdb, tmp_ctx, section, CONFDB_PC_SMARTCARD_INIT_PROMPT,
+                            DEFAULT_SMARTCARD_PROMPT_INIT, &init_prompt);
+    if (ret != EOK) {
+        DEBUG(SSSDBG_OP_FAILURE, "confdb_get_string failed, using defaults");
+    }
+
+    ret = confdb_get_string(cdb, tmp_ctx, section, CONFDB_PC_SMARTCARD_PIN_PROMPT,
+                            DEFAULT_SMARTCARD_PROMPT_PIN, &pin_prompt);
+    if (ret != EOK) {
+        DEBUG(SSSDBG_OP_FAILURE, "confdb_get_string failed, using defaults");
+    }
+
+    ret = pc_list_add_smartcard(pc_list, init_prompt, pin_prompt);
+    if (ret != EOK) {
+        DEBUG(SSSDBG_OP_FAILURE, "pc_list_add_smartcard failed.\n");
     }
 
     return ret;
@@ -293,14 +334,17 @@ errno_t pam_eval_prompting_config(struct pam_ctx *pctx, struct pam_data *pd,
     }
 
     if (types.cert_auth) {
-        /* If certificate based authentication is possilbe, i.e. a Smartcard
-         * or similar with the mapped certificate is available we currently
-         * prefer this authentication type unconditionally. If other types
-         * should be used the Smartcard can be removed during authentication.
-         * Since there currently are no specific options for cert_auth we are
-         * done. */
-        ret = EOK;
-        goto done;
+        ret = pam_set_prompting_options(pctx->rctx->cdb, pd->service,
+                                        pctx->prompting_config_sections,
+                                        pctx->num_prompting_config_sections,
+                                        CONFDB_PC_TYPE_SMARTCARD,
+                                        pam_set_smartcard_prompting_options,
+                                        &pc_list);
+        if (ret != EOK) {
+            DEBUG(SSSDBG_OP_FAILURE,
+                  "pam_set_prompting_options failed.\n");
+            goto done;
+        }
     }
 
     /* If OTP and password auth are possible we currently prefer OTP. */

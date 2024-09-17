@@ -29,6 +29,8 @@
 
 #include "util/authtok.h"
 
+#define PIN "ThePIN"
+
 
 struct test_state {
     struct sss_auth_token *authtoken;
@@ -751,6 +753,55 @@ static void test_sss_authtok_oauth2(void **state)
     sss_authtok_set_empty(ts->authtoken);
 }
 
+void test_sss_authtok_set_passkey_pin_local_passkey(void **state)
+{
+    struct test_state *ts = NULL;
+    enum sss_authtok_type type;
+    const char *pin = NULL;
+    char *data = NULL;
+    size_t len = 0;
+    int ret;
+
+    ts = talloc_get_type_abort(*state, struct test_state);
+    type = SSS_AUTHTOK_TYPE_PASSKEY;
+    data = talloc_strdup(ts, "passkey");
+    assert_non_null(data);
+    len = strlen(data) + 1;
+    ret = sss_authtok_set(ts->authtoken, type, (const uint8_t *)data, len);
+    assert_int_equal(ret, EOK);
+
+    ret = sss_authtok_set_passkey_pin(ts->authtoken, PIN);
+    assert_int_equal(ret, EOK);
+    ret = sss_authtok_get_passkey_pin(ts->authtoken, &pin, &len);
+    assert_int_equal(ret, EOK);
+    assert_int_equal(len, strlen(PIN));
+    assert_string_equal(pin, PIN);
+
+    talloc_free(data);
+    sss_authtok_set_empty(ts->authtoken);
+}
+
+void test_sss_authtok_set_passkey_pin_krb_passkey(void **state)
+{
+    struct test_state *ts = NULL;
+    const char *pin = NULL;
+    size_t len = 0;
+    int ret;
+
+    ts = talloc_get_type_abort(*state, struct test_state);
+    ret = sss_authtok_set_passkey_krb(ts->authtoken, "true", "key", "pin");
+    assert_int_equal(ret, EOK);
+
+    ret = sss_authtok_set_passkey_pin(ts->authtoken, PIN);
+    assert_int_equal(ret, EOK);
+    ret = sss_authtok_get_passkey_pin(ts->authtoken, &pin, &len);
+    assert_int_equal(ret, EOK);
+    assert_int_equal(len, strlen(PIN));
+    assert_string_equal(pin, PIN);
+
+    sss_authtok_set_empty(ts->authtoken);
+}
+
 
 int main(int argc, const char *argv[])
 {
@@ -790,6 +841,10 @@ int main(int argc, const char *argv[])
         cmocka_unit_test_setup_teardown(test_sss_authtok_2fa_single,
                                         setup, teardown),
         cmocka_unit_test_setup_teardown(test_sss_authtok_oauth2,
+                                        setup, teardown),
+        cmocka_unit_test_setup_teardown(test_sss_authtok_set_passkey_pin_local_passkey,
+                                        setup, teardown),
+        cmocka_unit_test_setup_teardown(test_sss_authtok_set_passkey_pin_krb_passkey,
                                         setup, teardown),
     };
 
