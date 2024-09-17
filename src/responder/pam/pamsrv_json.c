@@ -204,9 +204,6 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
     char *passkey_init_prompt = NULL;
     char *passkey_pin_prompt = NULL;
     char *passkey_touch_prompt = NULL;
-    const char *tmp = NULL;
-    int prompt_type;
-    size_t c;
     errno_t ret;
 
     tmp_ctx = talloc_new(NULL);
@@ -214,94 +211,10 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
         return ENOMEM;
     }
 
-    if (pc_list != NULL) {
-        for (c = 0; pc_list[c] != NULL; c++) {
-            prompt_type = pc_get_type(pc_list[c]);
-            switch(prompt_type) {
-            case PC_TYPE_PASSWORD:
-                tmp = pc_get_password_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                password_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (password_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                break;
-            case PC_TYPE_EIDP:
-                tmp = pc_get_eidp_init_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                oauth2_init_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (oauth2_init_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                tmp = pc_get_eidp_link_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                oauth2_link_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (oauth2_link_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                break;
-            case PC_TYPE_SMARTCARD:
-                tmp = pc_get_smartcard_init_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                sc_init_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (sc_init_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                tmp = pc_get_smartcard_pin_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                sc_pin_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (sc_pin_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                break;
-            case PC_TYPE_PASSKEY:
-                tmp = pc_get_passkey_inter_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                passkey_init_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (passkey_init_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                tmp = pc_get_passkey_pin_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                passkey_pin_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (passkey_pin_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                tmp = pc_get_passkey_touch_prompt(pc_list[c]);
-                if (tmp == NULL) {
-                    ret = ENOENT;
-                }
-                passkey_touch_prompt = talloc_strdup(tmp_ctx, tmp);
-                if (passkey_touch_prompt == NULL) {
-                    ret = ENOMEM;
-                }
-                break;
-            default:
-                ret = EPERM;
-                goto done;
-            }
-        }
-    }
-
     if (password_prompt == NULL) {
-        ret = confdb_get_string(cdb, tmp_ctx, CONFDB_PC_CONF_ENTRY,
-                                CONFDB_PC_PASSWORD_PROMPT, "",
-                                &password_prompt);
-        if (ret != EOK) {
+        password_prompt = talloc_strdup(tmp_ctx, "Password");
+        if (password_prompt == NULL) {
+            ret = ENOMEM;
             goto done;
         }
     }
@@ -332,7 +245,7 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
     }
 
     if (sc_pin_prompt == NULL) {
-        sc_pin_prompt = talloc_strdup(tmp_ctx, "PIN");
+        sc_pin_prompt = talloc_strdup(tmp_ctx, "Smartcard PIN");
         if (sc_pin_prompt == NULL) {
             ret = ENOMEM;
             goto done;

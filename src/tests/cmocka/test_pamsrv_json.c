@@ -31,17 +31,17 @@
 #include "src/responder/pam/pamsrv_json.h"
 
 #define PASSWORD_PROMPT     "Password"
-#define OAUTH2_INIT_PROMPT  "Init"
-#define OAUTH2_LINK_PROMPT  "Link"
+#define OAUTH2_INIT_PROMPT  "Log In"
+#define OAUTH2_LINK_PROMPT  "Log in online with another device"
 #define OAUTH2_URI          "short.url.com/tmp\0"
 #define OAUTH2_URI_COMP     "\0"
 #define OAUTH2_CODE         "1234-5678"
 #define OAUTH2_STR          OAUTH2_URI OAUTH2_URI_COMP OAUTH2_CODE
 #define SC_INIT_PROMPT      "Insert smartcard"
-#define SC_PIN_PROMPT       "PIN"
-#define PASSKEY_INIT_PROMPT "Insert key"
-#define PASSKEY_PIN_PROMPT  "Key PIN"
-#define PASSKEY_TOUCH_PROMPT "Touch key"
+#define SC_PIN_PROMPT       "Smartcard PIN"
+#define PASSKEY_INIT_PROMPT "Insert security key"
+#define PASSKEY_PIN_PROMPT  "Security key PIN"
+#define PASSKEY_TOUCH_PROMPT "Touch security key"
 
 #define SC1_CERT_USER       "cert_user1\0"
 #define SC1_TOKEN_NAME      "token_name1\0"
@@ -75,18 +75,18 @@
 #define BASIC_SC                    "\"smartcard:1\": {" \
                                     "\"name\": \"prompt1\", \"role\": \"smartcard\", " \
                                     "\"selectable\": true, " \
-                                    "\"init_instruction\": \"Insert smartcard\", " \
-                                    "\"pin_prompt\": \"PIN\"}"
+                                    "\"init_instruction\": \"" SC_INIT_PROMPT "\", " \
+                                    "\"pin_prompt\": \"" SC_PIN_PROMPT "\"}"
 #define MULTIPLE_SC                 "\"smartcard:1\": {" \
                                     "\"name\": \"prompt1\", \"role\": \"smartcard\", " \
                                     "\"selectable\": true, " \
-                                    "\"init_instruction\": \"Insert smartcard\", " \
-                                    "\"pin_prompt\": \"PIN\"}, " \
+                                    "\"init_instruction\": \"" SC_INIT_PROMPT "\", " \
+                                    "\"pin_prompt\": \"" SC_PIN_PROMPT "\"}, " \
                                     "\"smartcard:2\": {" \
                                     "\"name\": \"prompt2\", \"role\": \"smartcard\", " \
                                     "\"selectable\": true, " \
-                                    "\"init_instruction\": \"Insert smartcard\", " \
-                                    "\"pin_prompt\": \"PIN\"}"
+                                    "\"init_instruction\": \"" SC_INIT_PROMPT "\", " \
+                                    "\"pin_prompt\": \"" SC_PIN_PROMPT "\"}"
 #define BASIC_PASSKEY               "\"passkey\": {" \
                                     "\"name\": \"passkey\", \"role\": \"passkey\", " \
                                     "\"selectable\": true, " \
