@@ -53,7 +53,11 @@ struct sc_data {
     bool enabled;
     char **names;
     char *init_prompt;
+    char **cert_instructions;
     char *pin_prompt;
+    char **module_names;
+    char **key_ids;
+    char **labels;
 };
 
 
@@ -72,7 +76,7 @@ get_cert_list(TALLOC_CTX *mem_ctx, struct pam_data *pd,
               struct cert_auth_info **_cert_list);
 
 /**
- * @brief Extract smartcard certificate name list from the certificate list
+ * @brief Extract smartcard certificate data from the certificate list
  *
  * @param[in] mem_ctx Memory context
  * @param[in] cert_list Certificate list
@@ -83,7 +87,7 @@ get_cert_list(TALLOC_CTX *mem_ctx, struct pam_data *pd,
  *         error code otherwise.
  */
 errno_t
-get_cert_names(TALLOC_CTX *mem_ctx, struct cert_auth_info *cert_list,
+get_cert_data(TALLOC_CTX *mem_ctx, struct cert_auth_info *cert_list,
                struct auth_data *_auth_data);
 
 /**
