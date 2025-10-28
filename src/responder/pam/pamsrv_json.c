@@ -233,7 +233,7 @@ obtain_prompts(struct confdb_ctx *cdb, TALLOC_CTX *mem_ctx,
         goto done;
     }
 
-    sc_init_prompt = talloc_strdup(tmp_ctx, "Insert smartcard");
+    sc_init_prompt = talloc_strdup(tmp_ctx, DEFAULT_SMARTCARD_PROMPT_INIT);
     if (sc_init_prompt == NULL) {
         ret = ENOMEM;
         goto done;

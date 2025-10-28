@@ -30,7 +30,6 @@
 #define DEFAULT_PASSKEY_PROMPT_TOUCH _("Please touch the device.")
 #define DEFAULT_EIDP_PROMPT_INIT _("Log In.")
 #define DEFAULT_EIDP_PROMPT_LINK _("Log in online with another device.")
-#define DEFAULT_SMARTCARD_PROMPT_INIT _("Insert smartcard")
 #define DEFAULT_SMARTCARD_PROMPT_PIN _("PIN")
 
 typedef errno_t (pam_set_prompting_fn_t)(TALLOC_CTX *, struct confdb_ctx *,

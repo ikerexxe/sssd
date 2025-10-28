@@ -31,6 +31,8 @@
 #define PROMPT_CONFIG_FIRST     1
 #define PROMPT_CONFIG_SECOND    2
 
+#define DEFAULT_SMARTCARD_PROMPT_INIT _("Insert smartcard")
+
 struct pam_auth_req;
 
 typedef void (pam_dp_callback_t)(struct pam_auth_req *preq);
